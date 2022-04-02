@@ -71,7 +71,7 @@ navigator.mediaDevices = navigator.mediaDevices || navigator.webkitGetUserMedia 
 
 navigator.mediaDevices.getUserMedia({
   video: true,
-  audio: true
+  audio: false
 }).then(stream => {
 
   window.lstream = stream;
@@ -81,6 +81,7 @@ navigator.mediaDevices.getUserMedia({
   socket.on('user-connected', userId => {
     console.log(userId);
     connectToNewUser(userId, stream)
+    connectforchat(userId)
   })
 
 
@@ -100,6 +101,21 @@ myPeer.on('call', call => {
     })
   }, 1000);
   
+})
+
+myPeer.on('connection', conn => {
+  console.log('mess', conn)
+  window.myconn = conn;
+  conn.on('open', function() {
+    // Receive messages
+    conn.on('data', function(data) {
+      console.log('Received', data);
+      var parElement = document. getElementById("message-container");
+      var item = document.createElement('li');
+      item.textContent= "Stranger: " +data;
+parElement. appendChild(item);
+    });
+  });
 })
   
 socket.on('user-disconnected', userId => {
@@ -133,9 +149,36 @@ function connectToNewUser(userId, stream) {
 
   peers[userId] = call;
 }
+function connectforchat (userId) {
+  var conn = myPeer.connect(userId);
 
+  window.myconn = conn;
+  conn.on('open', function() {
+
+    // Receive messages
+    conn.on('data', function(data) {
+      console.log('Received', data);
+      var parElement = document. getElementById("message-container");
+      var item = document.createElement('li');
+      item.textContent= "Stranger: " + data;
+parElement. appendChild(item);
+    });
+  });
+}
 function addVideoStream(video, stream) {
   video.srcObject = stream
   //video.play()
   console.log('tasa');
 }
+
+document.getElementById('pqrs').addEventListener('click', function () {
+  message = document.getElementById('abcd').value;
+  if (message) {
+    window.myconn.send(message);
+    document.getElementById('abcd').value = '';
+    var parElement = document. getElementById("message-container");
+      var item = document.createElement('li');
+      item.textContent= "You: "+ message;
+parElement. appendChild(item);
+  }
+})
