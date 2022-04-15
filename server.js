@@ -3,6 +3,8 @@ const express = require('express'),
   server  = require('http').Server(app),
   io = require('socket.io')(server),
   {v4: uuidV4} = require('uuid');
+
+let sockets = [];
 //    { ExpressPeerServer  } = require('peer');
 
 // const peerServer = ExpressPeerServer(server, {
@@ -13,24 +15,39 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-  res.redirect(`/${uuidV4()}`);
+  res.redirect(`/video-chat`);
 });
 
-app.get('/:room', (req, res) => {
-  res.render('room', {roomId: req.params.room});
+app.get('/video-chat', (req, res) => {
+  res.render('vchat');
 });
 
 io.on('connection', socket => {
-  socket.on('join-room', (roomId, userId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit('user-connected', userId);
+  socket.on('vcall', (userId) => {
+    let room ;
 
-    console.log(roomId, userId);
+    if(sockets.length > 0) {
+      let x = sockets.shift();
+      socket.join(x.roomId);
+      socket.to(x.roomId).emit('user-connected', userId);
+      room =x.roomId;
+    }
+    else {
+      room = uuidV4();
+      socket.join(room);
+      socket.to(room).emit('user-connected', userId);
+      sockets.push({userId, roomId: room});
+    }
 
     socket.on('disconnect', () => {
-      socket.to(roomId).emit('user-disconnected', userId);
+      socket.to(room).emit('user-disconnected', userId);
       console.log('disconnected');
-    })
+    });
+
+    socket.on('leave', () => {
+      socket.in(room).emit('user-disconnected', userId);
+      console.log('leave');
+    });
   });
 });
 
