@@ -2,24 +2,20 @@ const express = require('express'),
   app = express(),
   server  = require('http').Server(app),
   io = require('socket.io')(server),
+  path = require('path'),
   {v4: uuidV4} = require('uuid');
 
 let sockets = [];
-//    { ExpressPeerServer  } = require('peer');
 
-// const peerServer = ExpressPeerServer(server, {
-//     path: '/myapp'
-//   });
-//   app.use('/myapp', peerServer);
-app.set('view engine', 'ejs');
+app.set('view engine', 'html');
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-  res.redirect(`/video-chat`);
+  res.redirect('/video-chat');
 });
 
 app.get('/video-chat', (req, res) => {
-  res.render('vchat');
+  res.sendFile(path.join(__dirname + '/views/vchat.html'));
 });
 
 io.on('connection', socket => {
